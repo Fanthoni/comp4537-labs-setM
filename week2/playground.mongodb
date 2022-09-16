@@ -1,40 +1,76 @@
 use("test")
 
-// db.unicorns.find().pretty().limit(2).skip(1)
+db.unicorns.find()
 
-// db.unicorns.find(
-//     { // selection
-//         gender: "f", 
-//     }, 
-//     {
-//         // projection
-//         name: 1,
-//         gender: "m",
-//         _id: 0
-//     }
-// )
+// db.unicorns.find({gender: 'm', weight: {$gt: 700}})
 
-// Returns all the unicorns who loves apple or orange
-// db.unicorns.find({$or: [
-//     {loves : {$in : ["apple"]}},
-//     {loves : {$in : ["carrot"]}},
-// ]})
-
-// Returns all female unicorns which either love apples or weigh
-// less than 500 pounds
 // db.unicorns.find({
-//     gender: "f",
-//     $or: [
-//         {loves: {$in: ["apple"]}},
-//         {weight: {$lt: 500}}
-//     ]
+//     gender: {$ne: 'f'},
+//     weight: {$gte: 701}
 // })
 
-// db.unicorns.update({
-//     name: "Aurora"
-// }, {$set: {weight: 500}})
+// db.unicorns.find({
+//     vampires: {$exists: false}
+// })
 
-// Get unicorn from heaviest
-// db.unicorns.find().sort(
-//     {weight: 1 }
-// )
+// db.unicorns.find({
+//     loves: {$in:['apple']},
+//     loves: {$in:['watermelon']}
+// })
+
+
+// db.unicorns.find({gender: 'm',
+//     $and: [{loves: 'apple'},
+//             {weight: {$lt: 500}},
+//         ]})
+
+
+// Chapter 2 
+
+// db.unicorns.update({name: 'Roooooodles'},
+//     {$set: {weight: 590}})
+
+// db.unicorns.find({name: 'Roooooodles'})
+
+// db.unicorns.find({name: 'Pilot'})
+// db.unicorns.update({name: 'Pilot'},
+//     {$inc: {vampires: -2}})
+// db.unicorns.find({name: 'Pilot'})
+
+
+// db.unicorns.update({name: 'Aurora'},
+//     {$push: {loves: 'sugar'}})
+// db.unicorns.find({name: 'Aurora'})
+
+// db.hits.update({page: 'unicorns'},
+// {$inc: {hits: 1}}, {upsert:true});
+// db.hits.find();
+
+// db.hits.update({page: 'cities'},
+// {$inc: {hits: 1}}, {upsert:true});
+// db.hits.find();
+
+
+// db.unicorns.update({},
+// {$set: {vaccinated: true }}, {multi: true});
+// db.unicorns.find({vaccinated: true});
+
+// Chapter 3
+// db.unicorns.find({}, {name: 1});
+
+// //heaviest unicorns first
+// db.unicorns.find().sort({weight: -1})
+// //by unicorn name then vampire kills:
+// db.unicorns.find().sort({name: 1,
+//     vampires: -1})
+
+
+// db.unicorns.find()
+// .sort({weight: -1})
+// .limit(2)
+// .skip(1)
+
+// db.unicorns.count({vampires: {$gt: 50}})
+
+// db.unicorns.find({vampires: {$gt: 50}})
+// .count()
