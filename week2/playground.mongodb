@@ -15,8 +15,26 @@ use("test")
 // )
 
 // Returns all the unicorns who loves apple or orange
+// db.unicorns.find({$or: [
+//     {loves : {$in : ["apple"]}},
+//     {loves : {$in : ["carrot"]}},
+// ]})
 
-db.unicorns.find({$or: [
-    {loves : {$in : ["apple"]}},
-    {loves : {$in : ["carrot"]}},
-]})
+// Returns all female unicorns which either love apples or weigh
+// less than 500 pounds
+// db.unicorns.find({
+//     gender: "f",
+//     $or: [
+//         {loves: {$in: ["apple"]}},
+//         {weight: {$lt: 500}}
+//     ]
+// })
+
+// db.unicorns.update({
+//     name: "Aurora"
+// }, {$set: {weight: 500}})
+
+// Get unicorn from heaviest
+// db.unicorns.find().sort(
+//     {weight: 1 }
+// )
