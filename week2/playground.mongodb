@@ -1,0 +1,22 @@
+use("test")
+
+// db.unicorns.find().pretty().limit(2).skip(1)
+
+// db.unicorns.find(
+//     { // selection
+//         gender: "f", 
+//     }, 
+//     {
+//         // projection
+//         name: 1,
+//         gender: "m",
+//         _id: 0
+//     }
+// )
+
+// Returns all the unicorns who loves apple or orange
+
+db.unicorns.find({$or: [
+    {loves : {$in : ["apple"]}},
+    {loves : {$in : ["carrot"]}},
+]})
