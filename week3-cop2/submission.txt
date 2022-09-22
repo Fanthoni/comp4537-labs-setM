@@ -1,0 +1,3 @@
+GH Link: https://github.com/Fanthoni/comp4537-setm/tree/main/week3
+
+Heroku API Link: https://cryptic-bayou-42647.herokuapp.com/
