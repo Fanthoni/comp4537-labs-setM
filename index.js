@@ -5,7 +5,7 @@ const express = require("express")
 const bodyParser = require("body-parser")
 const app = express()
 // var { unicornsJSON } = require('./data.js')
-var unicornsjSON = []
+var unicornsJSON = []
 
 const readFileAsync = util.promisify(readFile)
 const writeFileAsync = util.promisify(writeFile)
@@ -44,13 +44,12 @@ app.get('/api/v1/unicorn/:id', (req, res) => {
 })
   
 app.patch('/api/v1/unicorn/:id', (req, res) => {
-    unicornsJSON = unicornsJSON.map(({ _id, ...aUnicorn }) => {
-      if (_id == req.body._id) {
-        console.log("Bingo!");
-        return req.body
-      } else
-        return aUnicorn
-    })
+  const {id} = req.params
+    for (let i = 0; i < unicornsJSON.length; i++) {
+      if (unicornsJSON[i]._id === id) {
+        unicornsJSON[i] = req.body
+      }
+    }
     writeFileAsync('./data.json', JSON.stringify(unicornsJSON), "utf-8")
       .then(() => { })
       .catch((err) => { console.log(err); })
@@ -76,7 +75,6 @@ app.listen(process.env.PORT || port, async (err) => {
       return
     }
     unicornsJSON = JSON.parse(unicornsJSON)
-    console.log(unicornsJSON);
   } catch (error) {
     console.log(error);
   }
