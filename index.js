@@ -89,7 +89,7 @@ app.listen(process.env.PORT || port, async (err) => {
     console.log(err)
   }
     try {
-      await mongoose.connect('mongodb://localhost:27017/test')
+      await mongoose.connect('mongodb+srv://testUser:COMP4537_password@cluster0.vtxvo7p.mongodb.net/?retryWrites=true&w=majority')
     } catch (error) {
       console.log('db connection error', error);
     }
