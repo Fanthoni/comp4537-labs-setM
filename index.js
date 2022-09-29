@@ -84,7 +84,10 @@ app.delete("/api/v2/unicorn/:id", async (req, res) => {
   res.send(`Unicorn ${req.params.id} deleted successfully`)
 })
 
-app.listen(port, async () => {
+app.listen(process.env.PORT || port, async (err) => {
+  if (err) {
+    console.log(err)
+  }
     try {
       await mongoose.connect('mongodb://localhost:27017/test')
     } catch (error) {
