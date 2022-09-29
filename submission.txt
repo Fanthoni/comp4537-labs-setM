@@ -1,3 +1,5 @@
 GH Link: https://github.com/Fanthoni/comp4537-setm/tree/main/week3-cop2
 
 Heroku API Link: https://cryptic-bayou-42647.herokuapp.com/
+
+MongoDB connection URL: mongodb+srv://testUser:COMP4537_password@cluster0.vtxvo7p.mongodb.net/?retryWrites=true&w=majority
