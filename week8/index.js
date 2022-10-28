@@ -3,11 +3,11 @@ const mongoose = require('mongoose')
 const axios = require('axios')
 const {Schema} = mongoose
 const getThreeCharDigit = require("./utility");
+const {PokemonClientBadRequest, PokemonBadRequestMissingID, PokemonDbError, PokemonNotFoundError} = require("./error")
 
 const app = express()
 const port = 5050
 
-// Middlewares
 app.use(express.json())
 
 var pokemonSchema;
@@ -157,24 +157,22 @@ app.get("/api/v1/pokemon/:id", async (req, res) => {
 })
 
 // Get pokemon image
-app.get("/api/v1/pokemonImage/:id", async (req, res) => {
+app.get("/api/v1/pokemonImage/:id", async (req, res, next) => {
   const {id} = req.params
   if (!id) {
     return res.status(400).json({status: "ClientError", errMsg: "pokemonId is missing in the request params!"})
   }
 
   try {
-    let pokemonAPIId;
-    await pokemonModel.find({_id: id})
-      .then((pokemon) => {
-        pokemonAPIId = pokemon[0].id
-      })
-      .catch(err => {
-        return res.status(400).json({status: "Error", errMsg: "Issue found when getting pokemonId of " + id})
-      })
+    const pokemon = await pokemonModel.find({id: id})
+
+    if (pokemon.length === 0)  {
+      console.log("Im here")
+      return next(new PokemonNotFoundError(`Id ${id} is not a validPokemon`))
+    }
 
     const baseImageLinkURL = "https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/images/"
-    return res.status(200).json({status: "Success", imageLink: `${baseImageLinkURL}` +`${getThreeCharDigit(pokemonAPIId)}` + `.png`})
+    return res.status(200).json({status: "Success", imageLink: `${baseImageLinkURL}` +`${getThreeCharDigit(id)}` + `.png`})
   } catch (err) {
     console.log('err', err)
     return res.status(500).json({status: "Error", errMsg: err})
@@ -260,107 +258,10 @@ app.put("/api/v1/pokemon/:id", async (req, res) => {
   }
 })
 
-// Lecture week 6 - Advance d Filtering
-app.get("/pokemonAdvancedFileteringOld", async (req, res) => {  
-  try {
-    const {page, pagePerHit, sort, filteredProperty, ...query} = req.query
-
-    let pokemonQuery = pokemonModel.find(query).skip(page ?? 0).limit(pagePerHit ?? 5)
-
-    if (sort) {
-      pokemonQuery = pokemonQuery.sort(sort)
-    }
-    if (filteredProperty) {
-      let filterProps = filteredProperty.replaceAll(",", " ")
-      pokemonQuery = pokemonQuery.select(filterProps)
-    }
-    const pokemons = await pokemonQuery
-
-    res.status(200).json({status: "Success", data: pokemons})
-  } catch (e) {
-    console.error("Error when filtering advanced pokemon" + e)
-    res.status(500).json({status: "ServerError", errMsg: e})
-  }
-})
-
-// Tues Midterm practice
-app.get("/pokemonsAdvancedFiltering", async (req, res) => {
-  const {comparisonOperators} = req.query
-  const stats = ["HP", "Attack", "Defense", "Speed", "Speed Attack", "Speed Defense"]
-  let comparisonItems = comparisonOperators.split(",")
-
-  comparisonItems = comparisonItems.map(comparison => {
-    return comparison = comparison.trim()
-  })
-
-  const pokemon = await pokemonModel.find({"base.HP": {$lte: 1}})
-  console.log('pokemon', pokemon)
-
-  // let queryBuilder = pokemonModel.find()
-  
-  // comparisonItems.forEach(item => {
-  //   if (item.match(/\w*<=\d*/g)) {
-  //     console.log("im less than or equal to")
-  //     const operatorValue = item.split("<=")
-  //     queryBuilder = queryBuilder.where(`base.${operatorValue[0]}`).lte(parseInt(operatorValue[1]))
-  //     console.log('operatorValue', operatorValue)
-  //   } else if (item.match(/\w*<\d*/g)) {
-  //     console.log("im less than ")
-  //     const operatorValue = item.split("<")
-  //     queryBuilder = queryBuilder.where(`base.${operatorValue[0]}`).lt(parsseInt(operatorValue[1]))
-  //     console.log('operatorValue', operatorValue)
-  //   } else if (item.match(/\w*>=\d*/g)) {
-  //     console.log("im greater than or equal to ")
-  //     const operatorValue = item.split(">=")
-  //     queryBuilder = queryBuilder.where(`base.${operatorValue[0]}`).gte(parseInt(operatorValue[1]))
-  //     console.log('operatorValue', operatorValue)
-  //   } else if (item.match(/\w*>\d*/g)) {
-  //     console.log("im greater than ")
-  //     const operatorValue = item.split(">")
-  //     queryBuilder = queryBuilder.where(`base.${operatorValue[0]}`).gt(parseInt(operatorValue[1]))
-  //     console.log('operatorValue', operatorValue)
-  //   } else if (item.match(/w*==\d*/g)) {
-  //     console.log("im equal to ")
-  //     const operatorValue = item.split("==")
-  //     queryBuilder = queryBuilder.where(`base.${operatorValue[0]}`).equals(parseInt(operatorValue[1]))
-  //     console.log('operatorValue', operatorValue)
-  //   } else if (item.match(/w*!=\d*/g)) {
-  //     console.log("im not equal to ")
-  //     const operatorValue = item.split("!=")
-  //     queryBuilder = queryBuilder.where(`base.${operatorValue[0]}`).ne(parseInt(operatorValue[1]))
-  //     console.log('operatorValue', operatorValue)
-  //   } else {
-  //     console.log("im invalid ")
-  //   }
-  // })
-
-  // const queryRes = await queryBuilder
-
-  // res.json(queryRes)
-  res.end()
-})
-
-// Tuesday second midterm practice
-app.patch("/pokemonsAdvancedUpdate", async (req, res) => {
-  let {id, pushOperator} = req.query
-  try {
-    const pokemon = await pokemonModel.find({id: id})
-    if (pokemon.length == 0) {
-      res.status(400).json({status: 'ClientError', errMsg: `No pokemon found with id ${id}`})
-    }
-
-    const pokemonTypes = pokemon[0].type
-    pushOperator = pushOperator.trim()
-    pushOperator = pushOperator.substring(1, pushOperator.length - 1)
-    pushItems = pushOperator.split(",")
-    const newPokemonTypes = [...pokemonTypes, ...pushItems]
-    
-    await pokemonModel.updateOne({id: id}, {type: newPokemonTypes})
-    res.status(200).json({status: "Success", data: newPokemonTypes})
-  } catch (err) {
-    console.error("Error when updating a pokemon" + err)
-    res.status(500).json({status: "ServerError", errMsg: "Error when updating a pokemon"})
-  }
+// Customer error handler
+app.use((err, req, res, next) => {
+  console.log("Custom error handler")
+  res.status(400).send(err.name + " " + err.message)
 })
 
 app.use((req, res, next) => {
