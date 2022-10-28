@@ -4,6 +4,12 @@ class PokemonClientBadRequest extends Error {
       this.name = "PokemonBadRequest";
     }
 }
+class PokemonServerError extends Error {
+    constructor(message) {
+      super(message);
+      this.name = "PokemonBadRequest";
+    }
+}
 
 
 class PokemonBadRequestMissingID extends PokemonClientBadRequest {
@@ -12,18 +18,26 @@ class PokemonBadRequestMissingID extends PokemonClientBadRequest {
     this.name = "PokemonBadRequestMissingID";
   }
 }
-class PokemonDbError extends PokemonClientBadRequest {
-  constructor(message) {
-    super(message);
-    this.name = "PokemonDbError";
-  }
-}
 class PokemonNotFoundError extends PokemonClientBadRequest {
   constructor(message) {
     super(message);
     this.name = "PokemonNotFoundError";
   }
 }
+class PokemonBadQuery extends PokemonClientBadRequest {
+  constructor(message) {
+    super(message);
+    this.name = "PokemonBadQuery";
+  }
+}
+class PokemonDbError extends PokemonServerError {
+  constructor(message) {
+    super(message);
+    this.name = "PokemonDbError";
+  }
+}
 
 
-module.exports = {PokemonClientBadRequest, PokemonBadRequestMissingID, PokemonDbError, PokemonNotFoundError}
+
+
+module.exports = {PokemonClientBadRequest, PokemonBadRequestMissingID, PokemonDbError, PokemonNotFoundError, PokemonBadQuery}
