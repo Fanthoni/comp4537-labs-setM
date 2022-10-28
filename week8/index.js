@@ -4,7 +4,6 @@ const axios = require('axios')
 const {Schema} = mongoose
 const getThreeCharDigit = require("./utility");
 const {PokemonClientBadRequest, PokemonDbError, PokemonNotFoundError, PokemonBadQuery} = require("./error")
-// const {asyncWrapper} = require("./asyncWrapper")
 
 const app = express()
 const port = 5050
