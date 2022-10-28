@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
 const axios = require('axios')
 const {Schema} = mongoose
 const getThreeCharDigit = require("./utility");
-const {PokemonClientBadRequest, PokemonBadRequestMissingID, PokemonDbError, PokemonNotFoundError, PokemonBadQuery} = require("./error")
+const {PokemonClientBadRequest, PokemonDbError, PokemonNotFoundError, PokemonBadQuery} = require("./error")
+// const {asyncWrapper} = require("./asyncWrapper")
 
 const app = express()
 const port = 5050
@@ -76,10 +77,18 @@ app.listen(process.env.PORT || port, async (err) => {
   }
 )
 
-// Get batch pokemon data
-app.get("/api/v1/pokemons/", async (req, res, next) => {
+const asyncWrapper = (fn) => {
+  return async (req, res, next) => {
+    try {
+      await fn(req, res, next)
+    } catch (error) {
+      next(error)
+    }
+  }
+}
+
+app.get("/api/v1/pokemons/", asyncWrapper(async (req, res, next) => {
   let {count, after} = req.query;
-  try {
     count = parseInt(count)
     after = parseInt(after)
     if (!count || !after || isNaN(after) || isNaN(count) || count <= 0 || after < 0) {
@@ -93,13 +102,9 @@ app.get("/api/v1/pokemons/", async (req, res, next) => {
       }
       res.status(200).json({data: respond, status: "Success"})
     })
-  } catch (err) {
-    return res.status(500).json({errMsg: "Server Error occured", status: "ServerError"})
-  }
-})
+}))
 
-// Add a pokemon
-app.post("/api/v1/pokemon", async (req, res, next) => {
+app.post("/api/v1/pokemon", asyncWrapper(async (req, res, next) => {
   const pokemonValues = req.body;
   if (!pokemonValues || Object.keys(pokemonValues).length === 0) {
     return next(new PokemonBadQuery("Request body is missing!"))
@@ -122,10 +127,10 @@ app.post("/api/v1/pokemon", async (req, res, next) => {
     .catch((err) => {
       return next(new PokemonDbError("Error encountered when creating a pokemon"))
     })
-})
+}))
 
 // Get a pokemon data by id
-app.get("/api/v1/pokemon/:id", async (req, res, next) => {
+app.get("/api/v1/pokemon/:id", asyncWrapper(async (req, res, next) => {
   const {id} = req.params
   if (!id) {
     return next(new PokemonBadQuery("Id is missing from the request body"))
@@ -141,16 +146,14 @@ app.get("/api/v1/pokemon/:id", async (req, res, next) => {
     .catch((err) => {
       return next(new PokemonDbError("Error encountered when creating a pokemon"))
     })
-})
+}))
 
 // Get pokemon image
-app.get("/api/v1/pokemonImage/:id", async (req, res, next) => {
+app.get("/api/v1/pokemonImage/:id", asyncWrapper(async (req, res, next) => {
   const {id} = req.params
   if (!id) {
     return next(new PokemonBadQuery("pokemonId is missing in the request params!"))
   }
-
-  try {
     const pokemon = await pokemonModel.find({id: id})
 
     if (pokemon.length === 0)  {
@@ -159,14 +162,11 @@ app.get("/api/v1/pokemonImage/:id", async (req, res, next) => {
 
     const baseImageLinkURL = "https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/images/"
     return res.status(200).json({status: "Success", imageLink: `${baseImageLinkURL}` +`${getThreeCharDigit(id)}` + `.png`})
-  } catch (err) {
-    console.log('err', err)
-    return res.status(500).json({status: "Error", errMsg: err})
-  }
-})
+  
+}))
 
 // Delete a pokemon
-app.delete("/api/v1/pokemon/:id", async (req, res, next) => {
+app.delete("/api/v1/pokemon/:id", asyncWrapper(async (req, res, next) => {
   const {id} = req.params
   if (!id) {
     return next(new PokemonBadQuery("pokemonId is missing in the request params!"))
@@ -186,32 +186,29 @@ app.delete("/api/v1/pokemon/:id", async (req, res, next) => {
       console.error(`Error found when deleting a pokemon with id ${id}: ${err}`)
       return res.status(500).json({status: "Error", errMsg: "Issue found when deleting pokemon with id " + id})
     })
-})
+}))
 
 // Upsert a partial pokemon document
-app.patch("/api/v1/pokemon/:id", async (req, res) => {
+app.patch("/api/v1/pokemon/:id", asyncWrapper(async (req, res, next) => {
   const {id} = req.params
   const newPokemonValues = req.body
 
   const pokemon = await pokemonModel.find({id: id})
   if (pokemon.length == 0) {
-    return res.status(400).json({status: "ClientError", errMsg: 
-      `Pokemon with id ${id} does not exists`
-    })
+    return next(new PokemonNotFoundError(`No pokemon found for ${id}`))
   }
 
-  try {
-    await pokemonModel.updateOne({id: id}, newPokemonValues)
-      .then(doc => {
-        return res.status(200).json({status: "Success", data: {newPokemonValues}})
-      })
-  } catch (err) {
-    return res.status(500).json({status: "Errror", errMsg: `Error when upserting pokemon ${id}`})
-  }
-})
+  await pokemonModel.updateOne({id: id}, newPokemonValues)
+    .then(doc => {
+      return res.status(200).json({status: "Success", data: {newPokemonValues}})
+    })
+    .catch(err => {
+      return next(new PokemonDbError(`Error encountered while updatingPokemon with id ${id}`))
+    })
+}))
 
 // Update the entire pokemon document
-app.put("/api/v1/pokemon/:id", async (req, res, next) => {
+app.put("/api/v1/pokemon/:id", asyncWrapper(async (req, res, next) => {
   const {id} = req.params
   const newPokemonValues = req.body
 
@@ -226,21 +223,15 @@ app.put("/api/v1/pokemon/:id", async (req, res, next) => {
       return next(new PokemonDbError("Error encountered when creating a pokemon"))
     })
   } else {
-    // if a pokemon already exist, replace the values instead
-    try {
-      await pokemonModel.findOneAndUpdate({id: id}, newPokemonValues, {upsert: true})
-        .then(doc => {
-          return res.status(200).json({status: "Success", data: newPokemonValues})
-        })
-        .catch(err => {
-          return next(new PokemonBadQuery("One or more properties may be invalid"))
-        })
-    } catch (err) {
-      console.log(err)
-      return res.status(500).json({status: "Errror", errMsg: `Error when updating pokemon ${id}`})
-    }
+    await pokemonModel.findOneAndUpdate({id: id}, newPokemonValues, {upsert: true})
+      .then(doc => {
+        return res.status(200).json({status: "Success", data: newPokemonValues})
+      })
+      .catch(err => {
+        return next(new PokemonBadQuery("One or more properties may be invalid"))
+      })
   }
-})
+}))
 
 // Custom error handler
 app.use((err, req, res, next) => {
@@ -250,7 +241,7 @@ app.use((err, req, res, next) => {
   }
   const isClientError = err instanceof PokemonClientBadRequest
   const errorStatus = isClientError ? "ClientError" : "ServerError"
-  res.status(isClientError ? 400 : 500).send({status: errorStatus, error})
+  res.status(isClientError ? 400 : 500).send({status: errorStatus, error: error.message})
 })
 
 app.use((req, res, next) => {
