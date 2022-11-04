@@ -116,7 +116,7 @@ app.post("/api/v1/register", asyncWrapper(async (req, res, next) => {
 
   const salt = await bcrypt.genSalt(10)
   const hashedPassword = await bcrypt.hash(password, salt)
-  const newUser = await pokeUserModel.create({username, password: hashedPassword});
+  const newUser = await pokeUserModel.create({username, password: hashedPassword, email});
   return res.status(200).json({status: "Success", data: newUser})
 }))
 
