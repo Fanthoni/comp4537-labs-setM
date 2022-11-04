@@ -12,6 +12,7 @@ class PokemonServerError extends Error {
 }
 
 
+
 class PokemonBadRequestMissingID extends PokemonClientBadRequest {
   constructor(message) {
     super(message);
@@ -37,7 +38,14 @@ class PokemonDbError extends PokemonServerError {
   }
 }
 
+class PokemonUserBadRequest extends PokemonClientBadRequest {
+  constructor(message) {
+    super(message);
+    this.name = "PokemonUserBadRequest";
+  }
+}
 
 
 
-module.exports = {PokemonClientBadRequest, PokemonBadRequestMissingID, PokemonDbError, PokemonNotFoundError, PokemonBadQuery}
+
+module.exports = {PokemonClientBadRequest, PokemonBadRequestMissingID, PokemonDbError, PokemonNotFoundError, PokemonBadQuery, PokemonUserBadRequest}

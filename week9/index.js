@@ -3,17 +3,21 @@ const mongoose = require('mongoose')
 const axios = require('axios')
 const {Schema} = mongoose
 const dotenv = require("dotenv")
+const bcrypt = require("bcrypt")
+const jwt = require("jsonwebtoken")
 
 const getThreeCharDigit = require("./utility");
-const {PokemonClientBadRequest, PokemonDbError, PokemonNotFoundError, PokemonBadQuery} = require("./error")
+const pokeUserModel = require("./schema/pokeUser")
+const {PokemonClientBadRequest, PokemonDbError, PokemonNotFoundError, PokemonBadQuery, PokemonUserBadRequest} = require("./error")
 
 const app = express()
 dotenv.config();
 const port = process.env.PORT
+const unwantedValue = [undefined, null, ""]
 
 app.use(express.json())
 
-var pokemonSchema;
+// var pokemonSchema;
 var pokemonModel;
 
 app.listen(process.env.PORT || port, async (err) => {
@@ -21,7 +25,6 @@ app.listen(process.env.PORT || port, async (err) => {
     console.log(err)
   }
     try {
-      // await mongoose.connect('mongodb+srv://testUser:COMP4537_password@cluster0.vtxvo7p.mongodb.net/?retryWrites=true&w=majority')
       await mongoose.connect(process.env.DB_STRING)
       
       var pokemonTypes;
@@ -89,6 +92,70 @@ const asyncWrapper = (fn) => {
     }
   }
 }
+
+/**
+ * User Router
+ */
+
+// Create a new user
+app.post("/api/v1/register", asyncWrapper(async (req, res, next) => {
+  const {username, password, email} = req.body
+
+  if (unwantedValue.includes(username)) {
+    return next(new PokemonUserBadRequest("username is missing"))
+  } else if (unwantedValue.includes(password)) {
+    return next(new PokemonUserBadRequest("password is missing"))
+  } else if (unwantedValue.includes(email)) {
+    return next(new PokemonUserBadRequest("email is missing"))
+  }
+
+  const existingUsername = await pokeUserModel.find({username: username})
+  if (existingUsername.length > 0) {
+    return next(new PokemonUserBadRequest(`User with username ${username} already exists`))
+  }
+
+  const salt = await bcrypt.genSalt(10)
+  const hashedPassword = await bcrypt.hash(password, salt)
+  const newUser = await pokeUserModel.create({username, password: hashedPassword});
+  return res.status(200).json({status: "Success", data: newUser})
+}))
+
+// Login a user
+app.post('/api/v1/login', asyncWrapper(async (req, res) => {
+  const { username, password } = req.body
+  const user = await pokeUserModel.findOne({ username })
+  if (!user) {
+    throw new PokemonClientBadRequest("User not found")
+  }
+  const isPasswordCorrect = await bcrypt.compare(password, user.password)
+  if (!isPasswordCorrect) {
+    throw new PokemonClientBadRequest("Password is incorrect")
+  }
+
+   // Create and assign a token
+   const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET)
+   res.header('auth-token', token)
+  res.status(200).json({status: "Success", data: user})
+}))
+
+const auth = (req, res, next) => {
+  const token = req.header('auth-token')
+  if (!token) {
+    throw new PokemonClientBadRequest("Access denied")
+  }
+  try {
+    const verified = jwt.verify(token, process.env.TOKEN_SECRET) // nothing happens if token is valid
+    next()
+  } catch (err) {
+    throw new PokemonClientBadRequest("Invalid token")
+  }
+}
+
+app.use(auth)
+
+/**
+ * POKEMON ROUTER
+ */
 
 app.get("/api/v1/pokemons/", asyncWrapper(async (req, res, next) => {
   let {count, after} = req.query;
@@ -235,6 +302,8 @@ app.put("/api/v1/pokemon/:id", asyncWrapper(async (req, res, next) => {
   }
 }))
 
+
+
 // Custom error handler
 app.use((err, req, res, next) => {
   const error = {
@@ -246,6 +315,7 @@ app.use((err, req, res, next) => {
   res.status(isClientError ? 400 : 500).send({status: errorStatus, error: error.message})
 })
 
+// Missing route handler
 app.use((req, res) => {
   res.status(404).send({
   status: 404,
