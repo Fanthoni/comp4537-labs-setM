@@ -5,6 +5,7 @@ const {Schema} = mongoose
 const dotenv = require("dotenv")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
+const cors = require("cors")
 
 const getThreeCharDigit = require("./utility");
 const pokeUserModel = require("./schema/pokeUser")
@@ -16,6 +17,7 @@ const port = process.env.PORT
 const unwantedValue = [undefined, null, ""]
 
 app.use(express.json())
+app.use(cors())
 
 // var pokemonSchema;
 var pokemonModel;
@@ -135,6 +137,7 @@ app.post('/api/v1/login', asyncWrapper(async (req, res) => {
    // Create and assign a token
    const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET)
    res.header('auth-token', token)
+   console.log('token', token)
   res.status(200).json({status: "Success", data: user})
 }))
 
